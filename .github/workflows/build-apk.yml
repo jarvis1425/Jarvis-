@@ -39,7 +39,7 @@ jobs:
           sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <application#' AndroidManifest.xml
       - name: App icon
         run: |
-          RES=/tmp/app/android/app/src/main/res
+        sudo apt-get update -y; sudo apt-get install -y imagemagick;   RES=/tmp/app/android/app/src/main/res
           rm -rf $RES/mipmap-anydpi-v26
           for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
             d=${pair%%:*}; s=${pair##*:}
