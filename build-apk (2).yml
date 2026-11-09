@@ -1,0 +1,55 @@
+name: Build JARVIS APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Create Capacitor project
+        run: |
+          mkdir -p /tmp/app && cd /tmp/app
+          npm init -y
+          npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          mkdir www
+          echo '<!doctype html><title>JARVIS</title><body style="background:#000;color:#0ff">Loading JARVIS...</body>' > www/index.html
+          cat > capacitor.config.json <<'CFG'
+          {
+            "appId": "com.lilace.jarvis",
+            "appName": "JARVIS Lil Ace",
+            "webDir": "www",
+            "server": {
+              "url": "https://jarvis-enterprise-lil-ace-b1dfgp.v2.appdeploy.ai/",
+              "cleartext": false
+            }
+          }
+          CFG
+          npx cap add android
+      - name: Permissions
+        run: |
+          cd /tmp/app/android/app/src/main
+          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <application#' AndroidManifest.xml
+      - name: App icon
+        run: |
+          RES=/tmp/app/android/app/src/main/res
+          rm -rf $RES/mipmap-anydpi-v26
+          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d=${pair%%:*}; s=${pair##*:}
+            for n in ic_launcher ic_launcher_round ic_launcher_foreground; do
+              convert icon.png -resize ${s}x${s} $RES/mipmap-$d/$n.png
+            done
+          done
+      - name: Build APK
+        run: cd /tmp/app/android && chmod +x gradlew && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-apk
+          path: /tmp/app/android/app/build/outputs/apk/debug/app-debug.apk
